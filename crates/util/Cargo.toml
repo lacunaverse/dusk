@@ -1,9 +1,8 @@
 [package]
-name = "store"
+name = "util"
 version = "0.1.0"
 authors = ["hvlck <just.ethan@protonmail.com>"]
 edition = "2018"
 
 [dependencies]
-sled = "~0.34.6"
-util = { path = "../util" }
+serde = "~1.0.126"

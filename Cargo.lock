@@ -301,6 +301,8 @@ name = "api"
 version = "0.1.0"
 dependencies = [
  "actix-web",
+ "store",
+ "util",
  "views",
 ]
 
@@ -636,6 +638,7 @@ dependencies = [
  "actix-web",
  "api",
  "askama_actix",
+ "serde",
  "sled",
  "views",
 ]
@@ -1629,6 +1632,10 @@ checksum = "213701ba3370744dcd1a12960caa4843b3d68b4d1c0a5d575e0d65b2ee9d16c0"
 [[package]]
 name = "store"
 version = "0.1.0"
+dependencies = [
+ "sled",
+ "util",
+]
 
 [[package]]
 name = "syn"
@@ -1897,6 +1904,13 @@ dependencies = [
  "idna",
  "matches",
  "percent-encoding",
+]
+
+[[package]]
+name = "util"
+version = "0.1.0"
+dependencies = [
+ "serde",
 ]
 
 [[package]]

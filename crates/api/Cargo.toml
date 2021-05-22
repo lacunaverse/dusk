@@ -6,4 +6,7 @@ edition = "2018"
 
 [dependencies]
 actix-web = "~3.3"
+
 views = { path = "../views" }
+store = { path = "../store" }
+util = { path = "../util" }

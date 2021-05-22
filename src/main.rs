@@ -1,7 +1,7 @@
-use api::{serve_delete, serve_delete_api, serve_new_api, serve_root};
+use api::{serve_delete, serve_delete_api, serve_link, serve_new_api, serve_root};
 
 use actix_files;
-use actix_web::{get, middleware, App, HttpServer, Responder};
+use actix_web::{middleware, App, HttpServer, Responder};
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
@@ -15,6 +15,7 @@ async fn main() -> std::io::Result<()> {
             .service(
                 actix_files::Files::new("/static", "./static/dist").disable_content_disposition(),
             )
+            .service(serve_link)
     })
     .bind("127.0.0.1:8000")?
     .run()
