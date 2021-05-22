@@ -1,4 +1,4 @@
-use api::{serve_root, serve_new, serve_delete};
+use api::{serve_delete, serve_delete_api, serve_new_api, serve_root};
 
 use actix_files;
 use actix_web::{get, middleware, App, HttpServer, Responder};
@@ -9,8 +9,9 @@ async fn main() -> std::io::Result<()> {
         App::new()
             .wrap(middleware::Compress::default())
             .service(serve_root)
-            .service(serve_new)
+            .service(serve_new_api)
             .service(serve_delete)
+            .service(serve_delete_api)
             .service(
                 actix_files::Files::new("/static", "./static/dist").disable_content_disposition(),
             )
