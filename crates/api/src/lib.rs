@@ -1,6 +1,6 @@
 use std::fmt::{write, Display};
 
-use store::{get_link, store_link};
+use store::{delete_link, get_link, store_link};
 use util::LinkRequest;
 use views::{DeleteTemplate, IndexTemplate};
 
@@ -89,10 +89,31 @@ pub async fn serve_delete() -> impl Responder {
     DeleteTemplate {}
 }
 
+#[derive(Serialize, Deserialize, Clone)]
+struct DeleteRequest {
+    passcode: String,
+    id: String,
+}
+
 /// API endpoint for deleting a shortlink.
 #[post("/delete")]
-pub async fn serve_delete_api() -> impl Responder {
-    "not implemented"
+pub async fn serve_delete_api(data: Json<DeleteRequest>) -> Result<impl Responder, Error> {
+    let form = data.into_inner();
+    match get_link(&form.id) {
+        Ok((url, code)) => match delete_link(&form.id) {
+            Ok(()) => Ok(HttpResponse::Ok().json(NewLinkResponse {
+                status: String::from("ok"),
+                shortlink: String::new(),
+            })),
+            Err(error) => match error {
+                store::DeleteError::NotFound => Err(Error::NotFound),
+                store::DeleteError::File => Err(Error::SomethingWentWrong),
+            },
+        },
+        Err(error) => match error {
+            store::GetError::NotFound => Err(Error::NotFound),
+        },
+    }
 }
 
 #[derive(Deserialize)]
@@ -104,7 +125,7 @@ struct ShortLink {
 #[get("/link/{id}")]
 pub async fn serve_link(path: Path<ShortLink>) -> Result<impl Responder, Error> {
     match get_link(&path.id) {
-        Ok(url) => match url.len() {
+        Ok((url, _)) => match url.len() {
             0 => Err(Error::SomethingWentWrong),
             _ => Ok(HttpResponse::TemporaryRedirect()
                 .set_header("Location", url)

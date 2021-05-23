@@ -78,7 +78,7 @@ pub enum GetError {
     NotFound,
 }
 
-pub fn get_link(id: &String) -> Result<String, GetError> {
+pub fn get_link(id: &String) -> Result<(String, String), GetError> {
     match read_to_string(STORAGE_LOCATION) {
         Ok(file) => {
             if let Ok((does_exist, line)) = already_exists(&id, &file) {
@@ -90,8 +90,8 @@ pub fn get_link(id: &String) -> Result<String, GetError> {
                     let url = url.replace("!", ".");
 
                     match url.starts_with("http") {
-                        true => Ok(url),
-                        false => Ok(format!("https://{}", url)),
+                        true => Ok((url, code.to_string())),
+                        false => Ok((format!("https://{}", url), code.to_string())),
                     }
                 } else {
                     Err(GetError::NotFound)
@@ -101,6 +101,35 @@ pub fn get_link(id: &String) -> Result<String, GetError> {
             }
         }
         Err(error) => Err(GetError::NotFound),
+    }
+}
+
+pub enum DeleteError {
+    NotFound,
+    File,
+}
+
+pub fn delete_link(id: &String) -> Result<(), DeleteError> {
+    match read_to_string(STORAGE_LOCATION) {
+        Ok(file) => {
+            let mut line = String::new();
+            for (idx, x) in file.lines().enumerate() {
+                if let Some(idx) = x.find('.') {
+                    if x.split_at(idx).0 == id {
+                        line = x.to_string();
+                        break;
+                    } else {
+                        continue;
+                    }
+                } else {
+                    continue;
+                }
+            }
+
+            file.replace(format!("{}\n", line).as_str(), "");
+            Ok(())
+        }
+        Err(error) => Err(DeleteError::File),
     }
 }
 

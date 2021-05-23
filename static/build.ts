@@ -1,8 +1,8 @@
 require("esbuild")
     .build({
-        entryPoints: ["./src/scripts/index.ts"],
+        entryPoints: ["./src/scripts/index.ts", "./src/scripts/delete.ts"],
         bundle: true,
-        outfile: "dist/index.js",
+        outdir: "dist/",
         minify: true,
         sourcemap: true,
         treeShaking: true,
