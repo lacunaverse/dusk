@@ -1,6 +1,6 @@
 use std::fmt::{write, Display};
 
-use store::store_link;
+use store::{get_link, store_link};
 use util::LinkRequest;
 use views::{DeleteTemplate, IndexTemplate};
 
@@ -9,7 +9,7 @@ use actix_web::{
     get,
     http::{header, StatusCode},
     post,
-    web::Json,
+    web::{Json, Path},
     HttpResponse, Responder, ResponseError, Result,
 };
 use serde::{Deserialize, Serialize};
@@ -27,43 +27,47 @@ struct NewLinkResponse {
 }
 
 #[derive(Debug)]
-pub enum NewError {
+pub enum Error {
     InvalidForm,
     AlreadyExists,
     SomethingWentWrong,
+    NotFound,
 }
 
-impl Display for NewError {
+impl Display for Error {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::InvalidForm => write!(f, "Invalid form information was sent"),
             Self::AlreadyExists => write!(f, "This link already exists!"),
             Self::SomethingWentWrong => write!(f, "Something went wrong on our end"),
+            Self::NotFound => write!(f, "The requested resource could not found."),
         }
     }
 }
 
-impl actix_web::error::ResponseError for NewError {
+impl actix_web::error::ResponseError for Error {
     fn error_response(&self) -> HttpResponse {
         match self {
-            NewError::InvalidForm => HttpResponse::BadRequest().finish(),
-            NewError::AlreadyExists => HttpResponse::Conflict().finish(),
-            NewError::SomethingWentWrong => HttpResponse::InternalServerError().finish(),
+            Error::InvalidForm => HttpResponse::BadRequest().finish(),
+            Error::AlreadyExists => HttpResponse::Conflict().finish(),
+            Error::SomethingWentWrong => HttpResponse::InternalServerError().finish(),
+            Error::NotFound => HttpResponse::NotFound().finish(),
         }
     }
 
     fn status_code(&self) -> StatusCode {
         match self {
-            NewError::InvalidForm => StatusCode::BAD_REQUEST,
-            NewError::AlreadyExists => StatusCode::CONFLICT,
-            NewError::SomethingWentWrong => StatusCode::INTERNAL_SERVER_ERROR,
+            Error::InvalidForm => StatusCode::BAD_REQUEST,
+            Error::AlreadyExists => StatusCode::CONFLICT,
+            Error::SomethingWentWrong => StatusCode::INTERNAL_SERVER_ERROR,
+            Error::NotFound => StatusCode::NOT_FOUND,
         }
     }
 }
 
 /// API endpoint for generating a new shortlink.
 #[post("/new")]
-pub async fn serve_new_api(data: Json<LinkRequest>) -> Result<impl Responder, NewError> {
+pub async fn serve_new_api(data: Json<LinkRequest>) -> Result<impl Responder, Error> {
     let form = data.into_inner();
     match store_link(&form) {
         Ok(()) => Ok(HttpResponse::Ok().json(NewLinkResponse {
@@ -71,10 +75,10 @@ pub async fn serve_new_api(data: Json<LinkRequest>) -> Result<impl Responder, Ne
             shortlink: String::from(form.id),
         })),
         Err(error) => match error {
-            store::SaveError::AlreadyExists => Err(NewError::AlreadyExists),
-            store::SaveError::OpenFailure => Err(NewError::SomethingWentWrong),
-            store::SaveError::WriteFailure => Err(NewError::SomethingWentWrong),
-            store::SaveError::Other => Err(NewError::SomethingWentWrong),
+            store::SaveError::AlreadyExists => Err(Error::AlreadyExists),
+            store::SaveError::OpenFailure => Err(Error::SomethingWentWrong),
+            store::SaveError::WriteFailure => Err(Error::SomethingWentWrong),
+            store::SaveError::Other => Err(Error::SomethingWentWrong),
         },
     }
 }
@@ -91,10 +95,25 @@ pub async fn serve_delete_api() -> impl Responder {
     "not implemented"
 }
 
+#[derive(Deserialize)]
+struct ShortLink {
+    pub id: String,
+}
+
 /// Serves a redirect link
 #[get("/link/{id}")]
-pub async fn serve_link() -> impl Responder {
-    "not implemented"
+pub async fn serve_link(path: Path<ShortLink>) -> Result<impl Responder, Error> {
+    match get_link(&path.id) {
+        Ok(url) => match url.len() {
+            0 => Err(Error::SomethingWentWrong),
+            _ => Ok(HttpResponse::TemporaryRedirect()
+                .set_header("Location", url)
+                .finish()),
+        },
+        Err(error) => match error {
+            store::GetError::NotFound => Err(Error::NotFound),
+        },
+    }
 }
 
 #[cfg(test)]

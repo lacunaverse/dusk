@@ -181,8 +181,9 @@ input:focus {
     border: 2px solid var(--quinary);
 }
 
-input:invalid {
-    border: 2px solid var(--red);
+input:invalid,
+.invalid {
+    border: 2px solid var(--red) !important;
 }
 
 input[type="button"] {
