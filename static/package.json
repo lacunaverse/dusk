@@ -11,7 +11,7 @@
         "esbuild": "^0.15.5"
     },
     "scripts": {
-        "build": "esbuild --bundle ./src/*.ts --outdir=dist --minify",
+        "build": "esbuild --bundle ./src/*.* --outdir=dist --minify",
         "watch": "yarn run build --watch"
     }
 }
