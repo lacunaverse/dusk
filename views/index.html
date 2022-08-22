@@ -1,13 +1,18 @@
 {{template "layout" .}}
 {{define "content"}}
 <div>
-    <h1></h1>
-    <form>
+    <h1>Dusk</h1>
+    <div>
         <input id="url" type="url" placeholder="Link to shorten" />
-        <input id="stopcode" type="text" placeholder="(Optional) stopcode" />
-        <input id="send" type="button" maxlength="20" minlength="5" value="Shorten" />
-        <p id="msg"></p>
-    </form>
+        <input id="stopcode" maxlength="20" minlength="5" type="text" placeholder="(Optional) stopcode" />
+        <input id="send" type="button" value="Shorten" />
+    </div>
+    <div>
+        <input id="delete-id" type="text" placeholder="Link ID" />
+        <input id="delete-stopcode" maxlength="20" minlength="5" type="text" placeholder="Stopcode" />
+        <input id="delete-send" type="button" maxlength="20" minlength="5" value="Delete" />
+    </div>
+    <p id="msg"></p>
 </div>
 <script src="/static/index.js"></script>
 {{end}}
