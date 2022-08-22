@@ -1,0 +1,13 @@
+{{template "layout" .}}
+{{define "content"}}
+<div>
+    <h1></h1>
+    <form>
+        <input id="url" type="url" placeholder="Link to shorten" />
+        <input id="stopcode" type="text" placeholder="(Optional) stopcode" />
+        <input id="send" type="button" maxlength="20" minlength="5" value="Shorten" />
+        <p id="msg"></p>
+    </form>
+</div>
+<script src="/static/index.js"></script>
+{{end}}
