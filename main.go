@@ -135,11 +135,37 @@ func Redirect(w http.ResponseWriter, r *http.Request) {
 
 	if err != nil {
 		t.Render(w, "errors", nil, "404.html")
+		return
 	}
 
 	w.Header().Add("Location", link.Link.String())
 	w.WriteHeader(http.StatusPermanentRedirect)
 }
+
+type DeleteRequest struct {
+	Stopcode string `json:"stopcode"`
+	ID       string `json:"id"`
+}
+
+func Delete(w http.ResponseWriter, r *http.Request) {
+	delReq := &DeleteRequest{}
+	decoder := json.NewDecoder(r.Body)
+
+	err := decoder.Decode(delReq)
+	if err != nil {
+		sendError(w, "Invalid response.")
+	}
+
+	err = db.delete(delReq.ID, delReq.Stopcode)
+	if err != nil {
+		sendError(w, "Failed to delete shortlink: "+err.Error()+".")
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
+var db = &Database{}
 
 func main() {
 	database, err := sql.Open("sqlite3", "./store/main")
@@ -160,6 +186,7 @@ func main() {
 	r.HandleFunc("/", Index).Methods("GET")
 	r.HandleFunc("/add", AddLink).Methods("POST")
 	r.HandleFunc("/l/{id}", Redirect).Methods("GET")
+	r.HandleFunc("/delete", Delete).Methods("DELETE")
 
 	r.NotFoundHandler = NotFound{}
 	log.Fatal(http.ListenAndServe(":8000", r))
@@ -200,3 +227,61 @@ func (db *Database) add_link(req *AddLinkItem) error {
 	return tx.Commit()
 }
 
+func (db *Database) get_id(id string) (*AddLinkItem, error) {
+	result, err := db.Query("select * from links where id = ?", id)
+	if err != nil {
+		return &AddLinkItem{}, err
+	}
+	defer result.Close()
+
+	link := &AddLinkItem{}
+	for result.Next() {
+		var id string
+		var u string
+		var stop string
+		err = result.Scan(&id, &u, &stop)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		link.ID = id
+		link.Link, _ = url.Parse(u)
+		link.Stopcode = stop
+	}
+
+	if len(link.ID) == 0 {
+		return &AddLinkItem{}, errors.New("not found")
+	}
+
+	return link, nil
+}
+
+func (db *Database) delete(id, stopcode string) error {
+	record, err := db.get_id(id)
+	if err != nil {
+		return errors.New("shortlink does not exist")
+	}
+
+	if record.Stopcode != stopcode {
+		return errors.New("stopcode is not valid for the given id")
+	}
+
+	tx, err := db.Begin()
+	if err != nil {
+		return err
+	}
+
+	statement, err := tx.Prepare("delete from links where id = ?")
+	if err != nil {
+		return err
+	}
+
+	defer statement.Close()
+
+	_, err = statement.Exec(id)
+	if err != nil {
+		return err
+	}
+
+	return tx.Commit()
+}
