@@ -50,6 +50,17 @@ func Index(w http.ResponseWriter, r *http.Request) {
 	t.Render(w, "index.html", "", "index")
 }
 func main() {
+	database, err := sql.Open("sqlite3", "./store/main")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer database.Close()
+
+	db = &Database{database}
+	err = db.initialize()
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	r := mux.NewRouter()
 
@@ -63,5 +74,14 @@ func main() {
 
 type Database struct {
 	*sql.DB
+}
+
+//go:embed sql/init.sql
+var QUERY_INIT string
+
+func (db *Database) initialize() error {
+	_, err := db.Exec(QUERY_INIT)
+
+	return err
 }
 
