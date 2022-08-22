@@ -130,6 +130,17 @@ func generateID() string {
 	return id
 }
 
+func Redirect(w http.ResponseWriter, r *http.Request) {
+	link, err := db.get_id(mux.Vars(r)["id"])
+
+	if err != nil {
+		t.Render(w, "errors", nil, "404.html")
+	}
+
+	w.Header().Add("Location", link.Link.String())
+	w.WriteHeader(http.StatusPermanentRedirect)
+}
+
 func main() {
 	database, err := sql.Open("sqlite3", "./store/main")
 	if err != nil {
@@ -148,6 +159,7 @@ func main() {
 	r.PathPrefix("/static/").Handler(http.StripPrefix("/static/", http.FileServer(http.Dir("./static/dist")))).Methods("GET")
 	r.HandleFunc("/", Index).Methods("GET")
 	r.HandleFunc("/add", AddLink).Methods("POST")
+	r.HandleFunc("/l/{id}", Redirect).Methods("GET")
 
 	r.NotFoundHandler = NotFound{}
 	log.Fatal(http.ListenAndServe(":8000", r))
